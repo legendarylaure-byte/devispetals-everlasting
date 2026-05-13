@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   LayoutDashboard, 
@@ -11,12 +11,88 @@ import {
   LogOut,
   Sparkles,
   ArrowUpRight,
-  Activity
+  Activity,
+  Loader2
 } from 'lucide-react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+
+interface OrderDoc {
+  id: string;
+  customerName: string;
+  customerPhone: string;
+  product: string;
+  status: string;
+  createdAt?: any;
+  poem?: string;
+}
+
+const PRODUCT_PRICES: Record<string, number> = {
+  'Eternal Rose Blush': 2500,
+  'Kathmandu Gold Lily': 3200,
+  'Pearl Orchid Bundle': 4800,
+  'Midnight Velvet Tulip': 2900,
+  'Custom Bouquet': 3500,
+};
+
+function formatDate(ts: any): string {
+  if (!ts) return '—';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function formatCurrency(n: number): string {
+  return `रू ${n.toLocaleString('en-IN')}`;
+}
+
+function estimatePrice(product: string): number {
+  return PRODUCT_PRICES[product] || 3500;
+}
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
+  const [orders, setOrders] = useState<OrderDoc[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!auth) {
+      router.push('/');
+      return;
+    }
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setIsAuthed(true);
+      } else {
+        router.push('/');
+      }
+    });
+    return unsubscribe;
+  }, [router]);
+
+  useEffect(() => {
+    if (!db || isAuthed !== true) return;
+    const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+    const unsub = onSnapshot(q, (snapshot) => {
+      const docs = snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as OrderDoc));
+      setOrders(docs);
+      setOrdersLoading(false);
+    });
+    return unsub;
+  }, [isAuthed]);
+
+  const revenue = orders.reduce((sum, o) => sum + estimatePrice(o.product), 0);
+  const stats = [
+    { label: 'Revenue', value: formatCurrency(revenue), icon: <TrendingUp size={20} />, color: 'bg-emerald-500', trend: `+${orders.length} orders` },
+    { label: 'Orders', value: String(orders.length), icon: <ShoppingBag size={20} />, color: 'bg-rose-500', trend: `Last 30 days` },
+    { label: 'Leads', value: '—', icon: <Users size={20} />, color: 'bg-violet-500', trend: 'Coming soon' },
+  ];
+
   const [cmsContent, setCmsContent] = useState({
     heroTitle: 'Blooms that Never Fade',
     heroSub: 'Experience the soul of Nepalese craftsmanship...',
@@ -26,17 +102,13 @@ export default function AdminDashboard() {
     whatsapp: '+9715611588'
   });
 
-  const stats = [
-    { label: 'Revenue', value: 'रू 1,25,000', icon: <TrendingUp size={20} />, color: 'bg-emerald-500', trend: '+12.5%' },
-    { label: 'Orders', value: '12', icon: <ShoppingBag size={20} />, color: 'bg-rose-500', trend: '+4.2%' },
-    { label: 'Leads', value: '45', icon: <Users size={20} />, color: 'bg-violet-500', trend: '+22.1%' },
-  ];
-
-  const orders = [
-    { id: '#8801', name: 'Sujal P.', phone: '9841223344', product: 'Eternal Rose', status: 'Pending', date: 'May 12' },
-    { id: '#8802', name: 'Rajesh K.', phone: '9851099887', product: 'Custom Bundle', status: 'Shipped', date: 'May 11' },
-    { id: '#8803', name: 'Sita S.', phone: '9801122334', product: 'Gold Lily', status: 'Delivered', date: 'May 10' },
-  ];
+  if (isAuthed === null) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#fafafa]">
+        <Loader2 className="animate-spin text-primary" size={40} />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-[#fafafa] text-metal-black">
@@ -57,7 +129,10 @@ export default function AdminDashboard() {
           <SidebarLink icon={<Sparkles size={20} />} label="Social" active={activeTab === 'social'} onClick={() => setActiveTab('social')} />
         </nav>
 
-        <button className="flex items-center gap-3 text-gray-400 hover:text-red-500 transition-colors px-4 py-4 mt-auto font-bold text-sm">
+        <button 
+          onClick={() => { if (auth) signOut(auth); }}
+          className="flex items-center gap-3 text-gray-400 hover:text-red-500 transition-colors px-4 py-4 mt-auto font-bold text-sm"
+        >
           <LogOut size={20} /> Logout
         </button>
       </aside>
@@ -114,22 +189,28 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
+                {orders.length === 0 && !ordersLoading && (
+                  <tr><td colSpan={5} className="p-12 text-center text-gray-400 font-medium">No orders yet.</td></tr>
+                )}
+                {ordersLoading && (
+                  <tr><td colSpan={5} className="p-12 text-center text-gray-400 font-medium"><Loader2 className="animate-spin inline mr-2" size={16} /> Loading orders...</td></tr>
+                )}
                 {orders.map((order, i) => (
-                  <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
-                    <td className="p-8 font-bold">{order.id}</td>
+                  <tr key={order.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                    <td className="p-8 font-bold">#{order.id.slice(-4).toUpperCase()}</td>
                     <td className="p-8">
-                      <div className="font-bold">{order.name}</div>
-                      <div className="text-xs text-gray-400">{order.phone}</div>
+                      <div className="font-bold">{order.customerName}</div>
+                      <div className="text-xs text-gray-400">{order.customerPhone}</div>
                     </td>
                     <td className="p-8 font-medium">{order.product}</td>
                     <td className="p-8">
                       <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                        order.status === 'Delivered' ? 'bg-emerald-50 text-emerald-500' : 'bg-rose-50 text-rose-500'
+                        order.status === 'delivered' || order.status === 'Delivered' ? 'bg-emerald-50 text-emerald-500' : 'bg-rose-50 text-rose-500'
                       }`}>
                         {order.status}
                       </span>
                     </td>
-                    <td className="p-8 text-gray-400 font-medium">{order.date}</td>
+                    <td className="p-8 text-gray-400 font-medium">{formatDate(order.createdAt)}</td>
                   </tr>
                 ))}
               </tbody>

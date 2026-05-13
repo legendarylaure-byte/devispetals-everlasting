@@ -2,18 +2,21 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Lock, User, ArrowRight, ShieldCheck } from 'lucide-react';
+import { X, Lock, User, ArrowRight, ShieldCheck, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 
 export default function LoginModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const router = useRouter();
 
   useEffect(() => {
-    const handleOpen = () => setIsOpen(true);
+    const handleOpen = () => { setIsOpen(true); setError(''); };
     window.addEventListener('open-login', handleOpen);
     return () => window.removeEventListener('open-login', handleOpen);
   }, []);
@@ -21,12 +24,25 @@ export default function LoginModal() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate premium login experience
-    setTimeout(() => {
-      setIsLoading(false);
+    setError('');
+
+    try {
+      if (!auth) throw new Error('Authentication not configured');
+      await signInWithEmailAndPassword(auth, email, password);
       setIsOpen(false);
       router.push('/admin');
-    }, 1500);
+    } catch (err: any) {
+      const code = err.code || '';
+      if (code === 'auth/user-not-found' || code === 'auth/invalid-credential' || code === 'auth/wrong-password') {
+        setError('Invalid executive credentials. Please try again.');
+      } else if (code === 'auth/too-many-requests') {
+        setError('Too many attempts. Please wait before trying again.');
+      } else {
+        setError(err.message || 'Authentication failed. Please try again.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -93,6 +109,13 @@ export default function LoginModal() {
                   />
                 </div>
               </div>
+
+              {error && (
+                <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-100 rounded-2xl">
+                  <AlertCircle size={18} className="text-red-500 shrink-0 mt-0.5" />
+                  <p className="text-xs font-bold text-red-500 leading-relaxed">{error}</p>
+                </div>
+              )}
 
               <button 
                 type="submit"

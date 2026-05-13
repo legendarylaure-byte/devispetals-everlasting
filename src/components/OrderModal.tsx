@@ -41,9 +41,12 @@ export default function OrderModal() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...formData,
+          customerName: formData.name,
+          customerEmail: formData.email,
+          customerPhone: formData.mobile,
+          address: formData.address,
           product: productName,
-          type: 'booking'
+          message: formData.description,
         }),
       });
       
