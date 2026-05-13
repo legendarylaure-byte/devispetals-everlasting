@@ -29,7 +29,7 @@ export default function Footer() {
                 </div>
                 <div>
                    <p className="text-[10px] uppercase font-black tracking-widest text-gray-500">Call our Concierge</p>
-                   <p className="font-bold text-lg">+971 5611588</p>
+                   <p className="font-bold text-lg">+977 1 55XXXXX</p>
                 </div>
               </div>
               
