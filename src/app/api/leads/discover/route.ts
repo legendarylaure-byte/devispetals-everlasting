@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { model } from '@/lib/gemini';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const prompt = `Act as an expert business developer for Devis Petals (Everlasting Flowers in Kathmandu). 
@@ -11,6 +13,7 @@ export async function GET() {
     3. A draft poetic WhatsApp message to send them.
     Format as JSON.`;
 
+    if (!model) throw new Error('AI Model not initialized');
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();

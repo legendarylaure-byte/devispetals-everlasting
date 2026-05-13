@@ -1,11 +1,13 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+const genAI = process.env.GEMINI_API_KEY 
+  ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY) 
+  : null;
 
-export const model = genAI.getGenerativeModel({ 
+export const model = genAI ? genAI.getGenerativeModel({ 
   model: "gemini-1.5-flash",
   systemInstruction: "You are the 'Petal Oracle', the AI CEO of Devis Petals Pvt. Ltd. Your voice is poetic, meaningful, professional, and joyful. You specialize in handmade everlasting flowers. You help customers with queries and orders, and you provide business growth suggestions to the admin. Always maintain a 'World Elite' premium tone."
-});
+}) : null;
 
 /**
  * Generate a poetic response for customer interaction.
