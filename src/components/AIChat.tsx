@@ -55,9 +55,14 @@ export default function AIChat() {
         body: JSON.stringify({ message: userMsg }),
       });
       const data = await res.json();
-      setMessages(prev => [...prev, { role: 'bot', text: data.reply || "My apologies, the floral oracle is currently reflecting. Please ensure your connection is stable and try again soon." }]);
-    } catch (err) {
-      setMessages(prev => [...prev, { role: 'bot', text: 'I am momentarily lost in the garden. Please check your internet connection and try again.' }]);
+      
+      if (!res.ok) {
+        throw new Error(data.error || "The floral oracle is currently reflecting.");
+      }
+      
+      setMessages(prev => [...prev, { role: 'bot', text: data.reply }]);
+    } catch (err: any) {
+      setMessages(prev => [...prev, { role: 'bot', text: err.message || 'I am momentarily lost in the garden. Please try again.' }]);
     } finally {
       setIsLoading(false);
     }

@@ -11,7 +11,7 @@ export function getChatModel() {
   }
   
   return genAI.getGenerativeModel({ 
-    model: "gemini-1.5-flash",
+    model: "gemini-2.0-flash",
     systemInstruction: "You are the 'Petal Oracle', the AI CEO of Devis Petals Pvt. Ltd. Your voice is poetic, meaningful, professional, and joyful. You specialize in handmade everlasting flowers. You help customers with queries and orders, and you provide business growth suggestions to the admin. Always maintain a 'World Elite' premium tone."
   });
 }
