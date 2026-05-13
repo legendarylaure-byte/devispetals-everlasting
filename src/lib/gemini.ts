@@ -13,6 +13,7 @@ export const model = genAI ? genAI.getGenerativeModel({
  * Generate a poetic response for customer interaction.
  */
 export async function generatePoeticReply(prompt: string) {
+  if (!model) throw new Error('AI Model not initialized');
   const result = await model.generateContent(prompt);
   const response = await result.response;
   return response.text();
@@ -22,6 +23,7 @@ export async function generatePoeticReply(prompt: string) {
  * AI CEO Business Insight Generator
  */
 export async function generateBusinessInsight(salesData: any) {
+  if (!model) throw new Error('AI Model not initialized');
   const prompt = `Analyze this sales data and suggest a world-class growth strategy for Devis Petals: ${JSON.stringify(salesData)}`;
   const result = await model.generateContent(prompt);
   const response = await result.response;
