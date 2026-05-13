@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { model } from '@/lib/gemini';
+import { getChatModel } from '@/lib/gemini';
 import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
@@ -11,11 +11,11 @@ const chatSchema = z.object({
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    
-    // Task 4: Sanitize and validate input
     const validatedData = chatSchema.parse(body);
 
+    const model = getChatModel();
     if (!model) throw new Error('AI Model not initialized');
+    
     const result = await model.generateContent(validatedData.message);
     const response = await result.response;
     const text = response.text();
