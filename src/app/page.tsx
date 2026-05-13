@@ -1,5 +1,7 @@
 'use client';
 
+// Devis Petals Elite Platform - Production Build
+// Deployment Trigger: 2026-05-13
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { ShoppingBag, MessageSquare, ArrowRight } from 'lucide-react';
