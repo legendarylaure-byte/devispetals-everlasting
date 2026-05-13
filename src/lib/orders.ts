@@ -11,6 +11,7 @@ export interface OrderData {
 
 export async function createOrder(data: OrderData) {
   try {
+    if (!db) throw new Error('Database not initialized');
     const docRef = await addDoc(collection(db, 'orders'), {
       ...data,
       status: 'pending',
